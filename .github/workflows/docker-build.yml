@@ -71,3 +71,5 @@ jobs:
             docker pull ghcr.io/mint1524/okakchat-aiproxy:latest
             cd /etc/dokploy/compose/okakneprod-chatback-szkz0w/code
             sudo docker compose up -d --no-build
+            sleep 5
+            docker exec okakneprod-chatback-szkz0w-nginx-1 nginx -s reload
