@@ -37,9 +37,11 @@ object DatabaseFactory {
         val flyway = Flyway.configure()
             .dataSource(dataSource)
             .locations(*migrationLocations.toTypedArray())
-            .table(historyTable)          // isolated history per service
+            .table(historyTable)           // isolated history per service
             .outOfOrder(false)
             .validateOnMigrate(false)
+            .baselineOnMigrate(true)       // handle non-empty schema with no history
+            .baselineVersion("0")          // baseline at 0 so V1 still runs
             .load()
 
         flyway.repair()
