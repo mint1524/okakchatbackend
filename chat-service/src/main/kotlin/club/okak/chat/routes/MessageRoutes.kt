@@ -1,5 +1,6 @@
 package club.okak.chat.routes
 
+import club.okak.chat.services.LimitService
 import club.okak.shared.db.Conversations
 import club.okak.shared.db.Messages
 import io.ktor.http.*
@@ -62,6 +63,13 @@ fun Route.messageRoutes() {
                 }.count() > 0
             }
             if (!owns) return@post call.respond(HttpStatusCode.Forbidden)
+            // Check daily message limit
+            if (!LimitService.checkLimit(userId, "messages_per_day")) {
+                return@post call.respond(
+                    HttpStatusCode(429, "Too Many Requests"),
+                    mapOf("error" to "Daily message limit exceeded")
+                )
+            }
             val req = call.receive<AddMessageRequest>()
             val id = transaction {
                 val now = Clock.System.now()

@@ -3,13 +3,11 @@ package club.okak.aiproxy
 import club.okak.aiproxy.routes.proxyRoutes
 import club.okak.aiproxy.services.AiProxyService
 import club.okak.shared.auth.JwtConfig
-import club.okak.shared.auth.JwtUtils
 import club.okak.shared.db.DatabaseFactory
 import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
 import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
@@ -43,12 +41,10 @@ fun Application.module() {
         anyHost()
         allowHeader(HttpHeaders.Authorization)
     }
-    install(Authentication) {
-        jwt("auth-jwt") {
-            verifier(JwtUtils.verifier(jwtConfig))
-            validate { cred ->
-                if (cred.payload.subject != null) JWTPrincipal(cred.payload) else null
-            }
+    install(StatusPages) {
+        exception<Throwable> { call, cause ->
+            call.application.log.error("Unhandled error", cause)
+            call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Internal server error"))
         }
     }
 
@@ -56,6 +52,6 @@ fun Application.module() {
 
     routing {
         get("/health") { call.respond(mapOf("ok" to true)) }
-        proxyRoutes(proxyService)
+        proxyRoutes(proxyService, jwtConfig)
     }
 }

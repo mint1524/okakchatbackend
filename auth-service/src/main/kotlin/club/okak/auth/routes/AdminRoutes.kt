@@ -2,6 +2,8 @@ package club.okak.auth.routes
 
 import club.okak.shared.db.*
 import io.ktor.http.*
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
@@ -96,7 +98,10 @@ fun Route.adminRoutes() {
                         it[AdminAuditLog.action] = "grant_subscription"
                         it[AdminAuditLog.targetType] = "user"
                         it[AdminAuditLog.targetId] = userId.toString()
-                        it[AdminAuditLog.payload] = """{"planId":"${req.planId}","expiresAt":"${req.expiresAt}"}"""
+                        it[AdminAuditLog.payload] = buildJsonObject {
+                            put("planId", req.planId)
+                            put("expiresAt", req.expiresAt ?: "")
+                        }.toString()
                         it[AdminAuditLog.createdAt] = Clock.System.now()
                     }
                 }
@@ -129,7 +134,9 @@ fun Route.adminRoutes() {
                         it[AdminAuditLog.action] = "grant_admin"
                         it[AdminAuditLog.targetType] = "user"
                         it[AdminAuditLog.targetId] = targetId.toString()
-                        it[AdminAuditLog.payload] = """{"role":"${req.role}"}"""
+                        it[AdminAuditLog.payload] = buildJsonObject {
+                            put("role", req.role)
+                        }.toString()
                         it[AdminAuditLog.createdAt] = Clock.System.now()
                     }
                 }
