@@ -1,11 +1,15 @@
 package club.okak.aiproxy
 
 import club.okak.aiproxy.routes.proxyRoutes
+import club.okak.aiproxy.routes.providerRoutes
 import club.okak.aiproxy.services.AiProxyService
 import club.okak.shared.auth.JwtConfig
+import club.okak.shared.auth.JwtUtils
 import club.okak.shared.db.DatabaseFactory
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
@@ -33,6 +37,14 @@ fun Application.module() {
     val encSecret = System.getenv("AI_API_KEY_ENCRYPTION_SECRET")
         ?: error("AI_API_KEY_ENCRYPTION_SECRET required")
 
+    install(Authentication) {
+        jwt("auth-jwt") {
+            verifier(JwtUtils.verifier(jwtConfig))
+            validate { cred ->
+                if (cred.payload.subject != null) JWTPrincipal(cred.payload) else null
+            }
+        }
+    }
     install(WebSockets) {
         pingPeriod = 30.seconds
         timeout = 120.seconds
@@ -53,5 +65,6 @@ fun Application.module() {
     routing {
         get("/health") { call.respond(mapOf("ok" to true)) }
         proxyRoutes(proxyService, jwtConfig)
+        providerRoutes(encSecret, jwtConfig)
     }
 }
