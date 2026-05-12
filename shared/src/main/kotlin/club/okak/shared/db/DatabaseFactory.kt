@@ -6,13 +6,20 @@ import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.sql.Database
 
 object DatabaseFactory {
+    /**
+     * @param migrationLocations  e.g. ["classpath:db/migration"]
+     * @param historyTable        unique per service, e.g. "flyway_auth_history"
+     *                            — prevents all services from sharing one history
+     *                            table and stepping on each other's V1 migration.
+     */
     fun init(
         host: String,
         port: Int,
         db: String,
         user: String,
         password: String,
-        migrationLocations: List<String>
+        migrationLocations: List<String>,
+        historyTable: String = "flyway_schema_history"
     ) {
         val jdbcUrl = "jdbc:postgresql://$host:$port/$db"
         val config = HikariConfig().apply {
@@ -30,10 +37,12 @@ object DatabaseFactory {
         val flyway = Flyway.configure()
             .dataSource(dataSource)
             .locations(*migrationLocations.toTypedArray())
+            .table(historyTable)          // isolated history per service
             .outOfOrder(false)
-            .validateOnMigrate(false)  // skip checksum validation on already-applied migrations
+            .validateOnMigrate(false)
             .load()
-        flyway.repair()   // sync checksums if migration files changed
+
+        flyway.repair()
         flyway.migrate()
 
         Database.connect(dataSource)

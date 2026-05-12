@@ -27,7 +27,8 @@ fun Application.module() {
         db = System.getenv("POSTGRES_DB") ?: "okakchat",
         user = System.getenv("POSTGRES_USER") ?: "okak",
         password = System.getenv("POSTGRES_PASSWORD") ?: "changeme",
-        migrationLocations = listOf("classpath:db/migration")
+        migrationLocations = listOf("classpath:db/migration"),
+        historyTable = "flyway_chat_history"
     )
 
     val jwtConfig = JwtConfig(

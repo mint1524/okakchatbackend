@@ -20,7 +20,8 @@ fun Application.module() {
 
     DatabaseFactory.init(
         host = dbHost, port = dbPort, db = dbName, user = dbUser, password = dbPass,
-        migrationLocations = listOf("classpath:db/migration")
+        migrationLocations = listOf("classpath:db/migration"),
+        historyTable = "flyway_auth_history"
     )
 
     val jwtConfig = JwtConfig(
