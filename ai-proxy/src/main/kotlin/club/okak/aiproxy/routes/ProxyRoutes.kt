@@ -85,7 +85,10 @@ fun Route.proxyRoutes(service: AiProxyService, jwtConfig: JwtConfig) {
             ?: run { close(CloseReason(4000, "Missing model")); return@webSocket }
         val messages = payload["messages"]?.jsonArray
             ?: run { close(CloseReason(4000, "Missing messages")); return@webSocket }
-        val tools = payload["tools"]?.jsonArray
+        val tools        = payload["tools"]?.jsonArray
+        val temperature  = payload["temperature"]?.jsonPrimitive?.doubleOrNull
+        val systemPrompt = payload["systemPrompt"]?.jsonPrimitive?.contentOrNull
+        val maxTokens    = payload["maxTokens"]?.jsonPrimitive?.intOrNull
         val convId = payload["conversationId"]?.jsonPrimitive?.contentOrNull
             ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
 
@@ -96,7 +99,10 @@ fun Route.proxyRoutes(service: AiProxyService, jwtConfig: JwtConfig) {
         var promptTokens = 0
         var completionTokens = 0
 
-        service.streamCompletion(providerConfig, modelId, messages, tools)
+        service.streamCompletion(
+            providerConfig, modelId, messages, tools,
+            temperature, systemPrompt, maxTokens
+        )
             .onEach { chunk ->
                 send(Frame.Text(chunk))
                 try {

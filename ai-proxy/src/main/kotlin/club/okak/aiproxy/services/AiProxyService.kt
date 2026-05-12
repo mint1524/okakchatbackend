@@ -42,16 +42,31 @@ class AiProxyService(private val encSecret: String) {
         providerConfig: ProviderConfig,
         modelId: String,
         messages: JsonArray,
-        tools: JsonArray?
+        tools: JsonArray?,
+        temperature: Double? = null,
+        systemPrompt: String? = null,
+        maxTokens: Int? = null,
     ): Flow<String> = flow {
+        val allMessages: JsonArray = if (systemPrompt != null) {
+            buildJsonArray {
+                add(buildJsonObject { put("role", "system"); put("content", systemPrompt) })
+                messages.forEach { add(it) }
+            }
+        } else messages
+
         val bodyObj = buildJsonObject {
             put("model", modelId)
-            put("messages", messages)
+            put("messages", allMessages)
             put("stream", true)
+            temperature?.let { put("temperature", it) }
+            maxTokens?.let { put("max_tokens", it) }
             tools?.let { put("tools", it) }
         }
 
-        val response: HttpResponse = client.post("${providerConfig.baseUrl}/v1/chat/completions") {
+        // baseUrl already contains path prefix (e.g. "http://host/v1")
+        // → append only "/chat/completions", not "/v1/chat/completions"
+        val url = "${providerConfig.baseUrl}/chat/completions"
+        val response: HttpResponse = client.post(url) {
             header(HttpHeaders.Authorization, "Bearer ${providerConfig.apiKey}")
             header(HttpHeaders.Accept, "text/event-stream")
             contentType(ContentType.Application.Json)

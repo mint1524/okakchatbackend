@@ -31,6 +31,13 @@ private suspend fun RoutingContext.requireAdmin(): Boolean {
     return true
 }
 
+@Serializable data class AdminUserDto(
+    val id: String,
+    val email: String,
+    val displayName: String,
+    val emailVerified: Boolean
+)
+
 @Serializable data class GrantSubscriptionRequest(
     val planId: String,
     val expiresAt: String? = null,
@@ -51,11 +58,11 @@ fun Route.adminRoutes() {
                     var query = Users.selectAll()
                     if (q.isNotBlank()) query = query.where { Users.email like "%$q%" }
                     query.limit(20).offset((page * 20).toLong()).map {
-                        mapOf(
-                            "id" to it[Users.id].toString(),
-                            "email" to it[Users.email],
-                            "displayName" to it[Users.displayName],
-                            "emailVerified" to it[Users.emailVerified]
+                        AdminUserDto(
+                            id = it[Users.id].toString(),
+                            email = it[Users.email],
+                            displayName = it[Users.displayName],
+                            emailVerified = it[Users.emailVerified]
                         )
                     }
                 }
