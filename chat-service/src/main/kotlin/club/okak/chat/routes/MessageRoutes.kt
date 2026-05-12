@@ -22,6 +22,15 @@ data class AddMessageRequest(
     val tokensUsed: Int? = null
 )
 
+@Serializable
+data class MessageDto(
+    val id: String,
+    val role: String,
+    val content: String,
+    val tokensUsed: Int? = null,
+    val createdAt: String
+)
+
 fun Route.messageRoutes() {
     route("/api/chat/conversations/{convId}/messages") {
         get {
@@ -40,12 +49,12 @@ fun Route.messageRoutes() {
                     .where { Messages.conversationId eq convId }
                     .orderBy(Messages.createdAt, SortOrder.ASC)
                     .map {
-                        mapOf(
-                            "id" to it[Messages.id].toString(),
-                            "role" to it[Messages.role],
-                            "content" to it[Messages.content],
-                            "tokensUsed" to it[Messages.tokensUsed],
-                            "createdAt" to it[Messages.createdAt].toString()
+                        MessageDto(
+                            id = it[Messages.id].toString(),
+                            role = it[Messages.role],
+                            content = it[Messages.content],
+                            tokensUsed = it[Messages.tokensUsed],
+                            createdAt = it[Messages.createdAt].toString()
                         )
                     }
             }

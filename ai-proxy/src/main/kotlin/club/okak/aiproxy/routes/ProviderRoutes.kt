@@ -35,6 +35,19 @@ data class UpsertModelRequest(
     val enabled: Boolean = true
 )
 
+@Serializable
+data class ProviderDto(val id: String, val baseUrl: String, val displayName: String, val enabled: Boolean)
+
+@Serializable
+data class ModelDto(
+    val id: String,
+    val providerId: String,
+    val displayName: String,
+    val contextWindow: Int,
+    val supportsStreaming: Boolean,
+    val enabled: Boolean
+)
+
 private suspend fun RoutingContext.requireAdmin(): Boolean {
     val principal = call.principal<JWTPrincipal>()
     if (principal == null) {
@@ -57,11 +70,11 @@ fun Route.providerRoutes(encSecret: String, jwtConfig: JwtConfig) {
                 if (!requireAdmin()) return@get
                 val providers = transaction {
                     AiProviders.selectAll().map {
-                        mapOf(
-                            "id" to it[AiProviders.id],
-                            "baseUrl" to it[AiProviders.baseUrl],
-                            "displayName" to it[AiProviders.displayName],
-                            "enabled" to it[AiProviders.enabled]
+                        ProviderDto(
+                            id = it[AiProviders.id],
+                            baseUrl = it[AiProviders.baseUrl],
+                            displayName = it[AiProviders.displayName],
+                            enabled = it[AiProviders.enabled]
                         )
                     }
                 }
@@ -95,13 +108,13 @@ fun Route.providerRoutes(encSecret: String, jwtConfig: JwtConfig) {
                 if (!requireAdmin()) return@get
                 val models = transaction {
                     ModelConfigs.selectAll().map {
-                        mapOf(
-                            "id" to it[ModelConfigs.id],
-                            "providerId" to it[ModelConfigs.providerId],
-                            "displayName" to it[ModelConfigs.displayName],
-                            "contextWindow" to it[ModelConfigs.contextWindow],
-                            "supportsStreaming" to it[ModelConfigs.supportsStreaming],
-                            "enabled" to it[ModelConfigs.enabled]
+                        ModelDto(
+                            id = it[ModelConfigs.id],
+                            providerId = it[ModelConfigs.providerId],
+                            displayName = it[ModelConfigs.displayName],
+                            contextWindow = it[ModelConfigs.contextWindow],
+                            supportsStreaming = it[ModelConfigs.supportsStreaming],
+                            enabled = it[ModelConfigs.enabled]
                         )
                     }
                 }
