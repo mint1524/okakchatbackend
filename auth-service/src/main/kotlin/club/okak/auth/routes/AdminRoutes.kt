@@ -15,6 +15,20 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.UUID
 
+private suspend fun RoutingContext.requireAdmin(): Boolean {
+    val principal = call.principal<JWTPrincipal>()
+    if (principal == null) {
+        call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Unauthorized"))
+        return false
+    }
+    val isAdmin = principal.payload.getClaim("admin").asBoolean() ?: false
+    if (!isAdmin) {
+        call.respond(HttpStatusCode.Forbidden, mapOf("error" to "Forbidden"))
+        return false
+    }
+    return true
+}
+
 @Serializable data class GrantSubscriptionRequest(
     val planId: String,
     val expiresAt: String? = null,
@@ -26,21 +40,9 @@ import java.util.UUID
 fun Route.adminRoutes() {
     authenticate("auth-jwt") {
         route("/api/admin") {
-            intercept(ApplicationCallPipeline.Plugins) {
-                val principal = call.principal<JWTPrincipal>()
-                if (principal == null) {
-                    call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Unauthorized"))
-                    finish()
-                    return@intercept
-                }
-                val isAdmin = principal.payload.getClaim("admin").asBoolean() ?: false
-                if (!isAdmin) {
-                    call.respond(HttpStatusCode.Forbidden, mapOf("error" to "Forbidden"))
-                    finish()
-                }
-            }
 
             get("/users") {
+                if (!requireAdmin()) return@get
                 val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 0
                 val q = call.request.queryParameters["q"] ?: ""
                 val users = transaction {
@@ -59,6 +61,7 @@ fun Route.adminRoutes() {
             }
 
             post("/users/{userId}/subscription") {
+                if (!requireAdmin()) return@post
                 val adminId = UUID.fromString(call.principal<JWTPrincipal>()!!.payload.subject)
                 val userId = UUID.fromString(
                     call.parameters["userId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
@@ -101,6 +104,7 @@ fun Route.adminRoutes() {
             }
 
             post("/users/{userId}/admin") {
+                if (!requireAdmin()) return@post
                 val adminId = UUID.fromString(call.principal<JWTPrincipal>()!!.payload.subject)
                 val targetId = UUID.fromString(
                     call.parameters["userId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
@@ -133,6 +137,7 @@ fun Route.adminRoutes() {
             }
 
             post("/plans/{planId}/limits") {
+                if (!requireAdmin()) return@post
                 val adminId = UUID.fromString(call.principal<JWTPrincipal>()!!.payload.subject)
                 val planId = call.parameters["planId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
                 val req = call.receive<SetLimitRequest>()
@@ -161,6 +166,7 @@ fun Route.adminRoutes() {
             }
 
             post("/users/{userId}/limits") {
+                if (!requireAdmin()) return@post
                 val adminId = UUID.fromString(call.principal<JWTPrincipal>()!!.payload.subject)
                 val userId = call.parameters["userId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
                 val req = call.receive<SetLimitRequest>()
@@ -189,6 +195,7 @@ fun Route.adminRoutes() {
             }
 
             get("/audit") {
+                if (!requireAdmin()) return@get
                 val logs = transaction {
                     AdminAuditLog.selectAll()
                         .orderBy(AdminAuditLog.createdAt, SortOrder.DESC)
