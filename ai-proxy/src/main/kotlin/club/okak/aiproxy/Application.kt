@@ -7,9 +7,11 @@ import club.okak.shared.auth.JwtConfig
 import club.okak.shared.auth.JwtUtils
 import club.okak.shared.db.DatabaseFactory
 import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
+import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
@@ -38,6 +40,9 @@ fun Application.module() {
     val encSecret = System.getenv("AI_API_KEY_ENCRYPTION_SECRET")
         ?: error("AI_API_KEY_ENCRYPTION_SECRET required")
 
+    install(ContentNegotiation) {
+        json(kotlinx.serialization.json.Json { ignoreUnknownKeys = true; encodeDefaults = true })
+    }
     install(Authentication) {
         jwt("auth-jwt") {
             verifier(JwtUtils.verifier(jwtConfig))
@@ -53,6 +58,12 @@ fun Application.module() {
     install(CORS) {
         anyHost()
         allowHeader(HttpHeaders.Authorization)
+        allowHeader(HttpHeaders.ContentType)
+        allowMethod(HttpMethod.Options)
+        allowMethod(HttpMethod.Get)
+        allowMethod(HttpMethod.Post)
+        allowMethod(HttpMethod.Put)
+        allowMethod(HttpMethod.Delete)
     }
     install(StatusPages) {
         exception<Throwable> { call, cause ->
