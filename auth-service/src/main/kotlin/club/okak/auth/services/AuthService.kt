@@ -5,6 +5,7 @@ import club.okak.shared.auth.JwtConfig
 import club.okak.shared.auth.JwtUtils
 import club.okak.shared.db.RefreshTokens
 import org.mindrot.jbcrypt.BCrypt
+import org.slf4j.LoggerFactory
 import java.security.MessageDigest
 import java.util.UUID
 
@@ -14,6 +15,8 @@ class AuthService(
     private val jwtConfig: JwtConfig,
     private val mailService: MailService
 ) {
+    private val log = LoggerFactory.getLogger(AuthService::class.java)
+
     suspend fun register(email: String, password: String, displayName: String): UUID {
         require(email.contains("@") && email.contains(".")) { "Invalid email" }
         require(password.length >= 8) { "Password must be at least 8 characters" }
@@ -23,7 +26,14 @@ class AuthService(
         val userId = UserRepository.create(email, hash, displayName)
         val code = (100000..999999).random().toString()
         UserRepository.createVerificationCode(userId, code)
-        mailService.sendVerificationCode(email, code, displayName)
+
+        // Mail failure doesn't block registration — user can request resend later
+        try {
+            mailService.sendVerificationCode(email, code, displayName)
+        } catch (e: Exception) {
+            log.error("Failed to send verification email to $email (code=$code)", e)
+        }
+
         return userId
     }
 
