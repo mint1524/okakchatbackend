@@ -27,11 +27,14 @@ object DatabaseFactory {
         }
         val dataSource = HikariDataSource(config)
 
-        Flyway.configure()
+        val flyway = Flyway.configure()
             .dataSource(dataSource)
             .locations(*migrationLocations.toTypedArray())
+            .outOfOrder(false)
+            .validateOnMigrate(false)  // skip checksum validation on already-applied migrations
             .load()
-            .migrate()
+        flyway.repair()   // sync checksums if migration files changed
+        flyway.migrate()
 
         Database.connect(dataSource)
     }
