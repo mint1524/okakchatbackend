@@ -17,7 +17,8 @@ services:
   auth-service:
     build:
       context: .
-      dockerfile: auth-service/Dockerfile
+      dockerfile: Dockerfile
+      target: auth-service
     restart: unless-stopped
     depends_on:
       postgres:
@@ -38,7 +39,8 @@ services:
   chat-service:
     build:
       context: .
-      dockerfile: chat-service/Dockerfile
+      dockerfile: Dockerfile
+      target: chat-service
     restart: unless-stopped
     depends_on:
       postgres:
@@ -54,7 +56,8 @@ services:
   ai-proxy:
     build:
       context: .
-      dockerfile: ai-proxy/Dockerfile
+      dockerfile: Dockerfile
+      target: ai-proxy
     restart: unless-stopped
     depends_on:
       postgres:
