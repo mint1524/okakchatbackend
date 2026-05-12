@@ -77,10 +77,19 @@ services:
       - auth-service
       - chat-service
       - ai-proxy
-    ports:
-      - "80:80"
+    # No host port binding — Traefik routes to this container via labels
+    expose:
+      - "80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.okakchat.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.okakchat.entrypoints=websecure"
+      - "traefik.http.routers.okakchat.tls.certresolver=letsencrypt"
+      - "traefik.http.services.okakchat.loadbalancer.server.port=80"
+      # WebSocket support
+      - "traefik.http.middlewares.okakchat-ws.headers.customrequestheaders.X-Forwarded-Proto=https"
 
 volumes:
   pgdata:
