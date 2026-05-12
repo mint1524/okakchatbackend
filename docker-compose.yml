@@ -15,10 +15,7 @@ services:
       retries: 10
 
   auth-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: auth-service
+    image: ghcr.io/mint1524/okakchat-auth:latest
     restart: unless-stopped
     depends_on:
       postgres:
@@ -37,10 +34,7 @@ services:
       MAIL_SITE_URL: ${MAIL_SITE_URL:-https://okak.club}
 
   chat-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: chat-service
+    image: ghcr.io/mint1524/okakchat-chat:latest
     restart: unless-stopped
     depends_on:
       postgres:
@@ -54,10 +48,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
 
   ai-proxy:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: ai-proxy
+    image: ghcr.io/mint1524/okakchat-aiproxy:latest
     restart: unless-stopped
     depends_on:
       postgres:
