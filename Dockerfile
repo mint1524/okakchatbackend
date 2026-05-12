@@ -10,9 +10,9 @@ COPY auth-service/ auth-service/
 COPY chat-service/ chat-service/
 COPY ai-proxy/ ai-proxy/
 RUN --mount=type=cache,target=/root/.gradle \
-    GRADLE_OPTS="-Dorg.gradle.jvmargs=-Xmx2g -Dorg.gradle.workers.max=2" \
+    GRADLE_OPTS="-Xmx512m -Dorg.gradle.workers.max=1 -Dkotlin.daemon.jvm.options=-Xmx768m" \
     gradle :auth-service:installDist :chat-service:installDist :ai-proxy:installDist \
-    --no-daemon --parallel
+    --no-daemon
 
 # ── Stage 2: auth-service runtime ─────────────────────────────────────────────
 FROM eclipse-temurin:21-jre-alpine AS auth-service
