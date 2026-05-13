@@ -73,6 +73,13 @@ class AiProxyService(private val encSecret: String) {
             setBody(bodyObj.toString())
         }
 
+        if (response.status.value !in 200..299) {
+            val errorBody = runCatching { response.bodyAsText() }.getOrDefault("")
+            throw IllegalStateException(
+                "Upstream HTTP ${response.status.value} ${response.status.description}: ${errorBody.take(500)}"
+            )
+        }
+
         val channel = response.bodyAsChannel()
         while (!channel.isClosedForRead) {
             val line = channel.readUTF8Line() ?: break

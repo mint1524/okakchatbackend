@@ -16,8 +16,11 @@ import kotlinx.datetime.Clock
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import kotlinx.serialization.json.*
+import org.slf4j.LoggerFactory
 import java.util.UUID
 import kotlin.time.Duration.Companion.days
+
+private val proxyLog = LoggerFactory.getLogger("club.okak.aiproxy.routes.ProxyRoutes")
 
 fun Route.proxyRoutes(service: AiProxyService, jwtConfig: JwtConfig) {
     webSocket("/api/ai/stream") {
@@ -113,7 +116,10 @@ fun Route.proxyRoutes(service: AiProxyService, jwtConfig: JwtConfig) {
                     }
                 } catch (_: Exception) {}
             }
-            .catch { send(Frame.Text("""{"error":"Upstream error"}""")) }
+            .catch { cause ->
+                proxyLog.error("AI upstream stream failed", cause)
+                send(Frame.Text("""{"error":"Upstream error"}"""))
+            }
             .collect()
 
         send(Frame.Text("""{"done":true}"""))
