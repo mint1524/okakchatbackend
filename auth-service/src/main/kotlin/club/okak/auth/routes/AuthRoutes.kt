@@ -41,9 +41,13 @@ fun Route.authRoutes(authService: AuthService) {
         }
 
         post("/refresh") {
-            val req = call.receive<RefreshRequest>()
-            val pair = authService.refresh(req.refreshToken, req.deviceInfo)
-            call.respond(TokenResponse(pair.accessToken, pair.refreshToken))
+            try {
+                val req = call.receive<RefreshRequest>()
+                val pair = authService.refresh(req.refreshToken, req.deviceInfo)
+                call.respond(TokenResponse(pair.accessToken, pair.refreshToken))
+            } catch (e: IllegalArgumentException) {
+                call.respond(HttpStatusCode.Unauthorized, mapOf("error" to (e.message ?: "Invalid refresh token")))
+            }
         }
 
         authenticate("auth-jwt") {
