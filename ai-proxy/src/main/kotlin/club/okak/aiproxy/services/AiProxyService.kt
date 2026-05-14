@@ -66,26 +66,26 @@ class AiProxyService(private val encSecret: String) {
         // baseUrl already contains path prefix (e.g. "http://host/v1")
         // → append only "/chat/completions", not "/v1/chat/completions"
         val url = "${providerConfig.baseUrl}/chat/completions"
-        val response: HttpResponse = client.post(url) {
+        client.preparePost(url) {
             header(HttpHeaders.Authorization, "Bearer ${providerConfig.apiKey}")
             header(HttpHeaders.Accept, "text/event-stream")
             contentType(ContentType.Application.Json)
             setBody(bodyObj.toString())
-        }
+        }.execute { response: HttpResponse ->
+            if (response.status.value !in 200..299) {
+                val errorBody = runCatching { response.bodyAsText() }.getOrDefault("")
+                throw IllegalStateException(
+                    "Upstream HTTP ${response.status.value} ${response.status.description}: ${errorBody.take(500)}"
+                )
+            }
 
-        if (response.status.value !in 200..299) {
-            val errorBody = runCatching { response.bodyAsText() }.getOrDefault("")
-            throw IllegalStateException(
-                "Upstream HTTP ${response.status.value} ${response.status.description}: ${errorBody.take(500)}"
-            )
-        }
-
-        val channel = response.bodyAsChannel()
-        while (!channel.isClosedForRead) {
-            val line = channel.readUTF8Line() ?: break
-            if (line.startsWith("data: ")) {
-                val data = line.removePrefix("data: ").trim()
-                if (data != "[DONE]") emit(data)
+            val channel = response.bodyAsChannel()
+            while (!channel.isClosedForRead) {
+                val line = channel.readUTF8Line() ?: break
+                if (line.startsWith("data: ")) {
+                    val data = line.removePrefix("data: ").trim()
+                    if (data != "[DONE]") emit(data)
+                }
             }
         }
     }
